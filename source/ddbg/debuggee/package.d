@@ -1,6 +1,6 @@
-module ddbg.debugee;
+module ddbg.debuggee;
 
-public import ddbg.debugee.elf;
+public import ddbg.debuggee.elf;
 
 public import ddbg.breakpoint;
 public import ddbg.register;

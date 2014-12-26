@@ -1,7 +1,7 @@
-module ddbg.debugee.elf;
+module ddbg.debuggee.elf;
 
 import ddbg.common;
-import ddbg.debugee;
+import ddbg.debuggee;
 import ddbg.sys.ptrace;
 
 import std.exception;
@@ -14,7 +14,7 @@ import core.sys.posix.sys.wait;
 import core.sys.posix.unistd;
 import core.stdc.config;
 
-/// elf debugee implementation
+/// elf debuggee implementation
 class ElfDebuggee : WhiteHole!Debuggee
 {
 	private Tid m_debuggee;

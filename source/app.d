@@ -1,4 +1,4 @@
-import ddbg.debugee;
+import ddbg.debuggee;
 
 import std.concurrency;
 import std.stdio;
