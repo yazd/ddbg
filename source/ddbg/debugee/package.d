@@ -9,9 +9,9 @@ import ddbg.common;
 /// Messages
 struct Started {}
 /// ditto
-struct Stopped {}
+struct Stopped { int signal; }
 /// ditto
-struct Signalled {}
+struct Signalled { int signal; }
 /// ditto
 struct Attached {}
 /// ditto

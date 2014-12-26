@@ -13,40 +13,41 @@ void main()
 	while (!dbg.exited)
 	{
 		receive(
-			(Started msg) => onStart(),
-			(Stopped msg) => onStop(),
-			(Signalled msg) => onSignal(),
-			(Attached msg) => onAttach(),
-			(Exited msg) => onExit(),
-			(Variant v) => writeln("uncaught message"),
+			(Started msg) => onStart(msg),
+			(Stopped msg) => onStop(msg),
+			(Signalled msg) => onSignal(msg),
+			(Attached msg) => onAttach(msg),
+			(Exited msg) => onExit(msg),
+			(LinkTerminated msg) => writeln("link terminated"),
+			(Variant msg) => writeln("uncaught message (", msg.type(), ")"),
 		);
 	}
 
 	writeln("done");
 }
 
-void onStart()
+void onStart(Started)
 {
 	writeln("started");
 }
 
-void onStop()
+void onStop(Stopped msg)
 {
-	writeln("stopped");
-//	dbg.continue_();
+	writeln("stopped due to signal ", msg.signal);
+	dbg.continue_();
 }
 
-void onSignal()
+void onSignal(Signalled msg)
 {
-	writeln("signalled");
+	writeln("signalled ", msg.signal);
 }
 
-void onAttach()
+void onAttach(Attached)
 {
 	writeln("attached");
 }
 
-void onExit()
+void onExit(Exited)
 {
 	writeln("exited");
 }

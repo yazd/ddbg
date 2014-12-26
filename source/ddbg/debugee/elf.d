@@ -3,7 +3,6 @@ module ddbg.debugee.elf;
 import ddbg.debugee;
 import ddbg.ptrace;
 
-import std.stdio;
 import std.string;
 import std.exception;
 import std.algorithm;
@@ -33,8 +32,7 @@ class ElfDebuggee : WhiteHole!Debuggee
 
 			if (WIFSTOPPED(status))
 			{
-				debug writefln("Child has stopped due to signal %s", WSTOPSIG(status));
-				ownerTid().send(Stopped());
+				ownerTid().send(Stopped(WSTOPSIG(status)));
 
 				receive(
 					(Continue req) { ptrace(__ptrace_request.PTRACE_CONT, child, null, null); },
@@ -43,8 +41,7 @@ class ElfDebuggee : WhiteHole!Debuggee
 
 			if (WIFSIGNALED(status))
 			{
-				debug writefln("Child %s received signal %s", child, WTERMSIG(status));
-				ownerTid().send(Signalled());
+				ownerTid().send(Signalled(WTERMSIG(status)));
 			}
 		}
 		while (!WIFEXITED(status));
@@ -61,7 +58,7 @@ class ElfDebuggee : WhiteHole!Debuggee
 		{
 			// child
 			enforce(ptrace(__ptrace_request.PTRACE_TRACEME, 0, null, null) == 0, "ptrace failed");
-			execve(binary.toStringz(), args.chain(only(null)).map!toStringz.array().ptr, env.chain(only(null)).map!toStringz.array().ptr);
+			execve(binary.toStringz(), chain(only(binary), args).map!toStringz.chain(only(null)).array().ptr, env.map!toStringz.chain(only(null)).array().ptr);
 			exit(0);
 		}
 		else if (pid > 0)
