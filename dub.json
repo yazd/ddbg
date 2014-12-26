@@ -1,5 +1,5 @@
 {
-	"name": "d-debug",
+	"name": "ddbg",
 	"description": "ELF x86 and x86-64 debugger",
 	"copyright": "Copyright © 2014, Yazan Dabain",
 	"authors": ["Yazan Dabain"],
