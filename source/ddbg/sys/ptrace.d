@@ -1,0 +1,73 @@
+module ddbg.sys.ptrace;
+
+import core.stdc.config;
+import core.sys.posix.unistd;
+
+extern(C):
+
+///
+enum __ptrace_request : int
+{
+	PTRACE_TRACEME = 0,
+	PTRACE_PEEKTEXT = 1,
+	PTRACE_PEEKDATA = 2,
+	PTRACE_PEEKUSER = 3,
+	PTRACE_POKETEXT = 4,
+	PTRACE_POKEDATA = 5,
+	PTRACE_POKEUSER = 6,
+	PTRACE_CONT = 7,
+	PTRACE_KILL = 8,
+	PTRACE_SINGLESTEP = 9,
+	PTRACE_GETREGS = 12,
+	PTRACE_SETREGS = 13,
+	PTRACE_GETFPREGS = 14,
+	PTRACE_SETFPREGS = 15,
+	PTRACE_ATTACH = 16,
+	PTRACE_DETACH = 17,
+	PTRACE_GETFPXREGS = 18,
+	PTRACE_SETFPXREGS = 19,
+	PTRACE_SYSCALL = 24,
+	PTRACE_SETOPTIONS = 0x4200,
+	PTRACE_GETEVENTMSG = 0x4201,
+	PTRACE_GETSIGINFO = 0x4202,
+	PTRACE_SETSIGINFO = 0x4203,
+	PTRACE_GETREGSET = 0x4204,
+	PTRACE_SETREGSET = 0x4205,
+	PTRACE_SEIZE = 0x4206,
+	PTRACE_INTERRUPT = 0x4207,
+	PTRACE_LISTEN = 0x4208,
+	PTRACE_PEEKSIGINFO = 0x4209,
+}
+
+enum PTRACE_TRACEME = __ptrace_request.PTRACE_TRACEME;
+enum PTRACE_PEEKTEXT = __ptrace_request.PTRACE_PEEKTEXT;
+enum PTRACE_PEEKDATA = __ptrace_request.PTRACE_PEEKDATA;
+enum PTRACE_PEEKUSER = __ptrace_request.PTRACE_PEEKUSER;
+enum PTRACE_POKETEXT = __ptrace_request.PTRACE_POKETEXT;
+enum PTRACE_POKEDATA = __ptrace_request.PTRACE_POKEDATA;
+enum PTRACE_POKEUSER = __ptrace_request.PTRACE_POKEUSER;
+enum PTRACE_CONT = __ptrace_request.PTRACE_CONT;
+enum PTRACE_KILL = __ptrace_request.PTRACE_KILL;
+enum PTRACE_SINGLESTEP = __ptrace_request.PTRACE_SINGLESTEP;
+enum PTRACE_GETREGS = __ptrace_request.PTRACE_GETREGS;
+enum PTRACE_SETREGS = __ptrace_request.PTRACE_SETREGS;
+enum PTRACE_GETFPREGS = __ptrace_request.PTRACE_GETFPREGS;
+enum PTRACE_SETFPREGS = __ptrace_request.PTRACE_SETFPREGS;
+enum PTRACE_ATTACH = __ptrace_request.PTRACE_ATTACH;
+enum PTRACE_DETACH = __ptrace_request.PTRACE_DETACH;
+enum PTRACE_GETFPXREGS = __ptrace_request.PTRACE_GETFPXREGS;
+enum PTRACE_SETFPXREGS = __ptrace_request.PTRACE_SETFPXREGS;
+enum PTRACE_SYSCALL = __ptrace_request.PTRACE_SYSCALL;
+enum PTRACE_SETOPTIONS = __ptrace_request.PTRACE_SETOPTIONS;
+enum PTRACE_GETEVENTMSG = __ptrace_request.PTRACE_GETEVENTMSG;
+enum PTRACE_GETSIGINFO = __ptrace_request.PTRACE_GETSIGINFO;
+enum PTRACE_SETSIGINFO = __ptrace_request.PTRACE_SETSIGINFO;
+enum PTRACE_GETREGSET = __ptrace_request.PTRACE_GETREGSET;
+enum PTRACE_SETREGSET = __ptrace_request.PTRACE_SETREGSET;
+enum PTRACE_SEIZE = __ptrace_request.PTRACE_SEIZE;
+enum PTRACE_INTERRUPT = __ptrace_request.PTRACE_INTERRUPT;
+enum PTRACE_LISTEN = __ptrace_request.PTRACE_LISTEN;
+enum PTRACE_PEEKSIGINFO = __ptrace_request.PTRACE_PEEKSIGINFO;
+
+///
+c_long ptrace(__ptrace_request request, pid_t pid, void* addr, void* data);

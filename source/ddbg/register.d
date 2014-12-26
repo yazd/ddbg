@@ -1,3 +1,5 @@
 module ddbg.register;
 
-struct Register {}
+import ddbg.sys.registers;
+
+alias Registers = user_regs_struct;

@@ -1,12 +1,10 @@
 module ddbg.debugee.elf;
 
+import ddbg.common;
 import ddbg.debugee;
-import ddbg.ptrace;
+import ddbg.sys.ptrace;
 
-import std.string;
 import std.exception;
-import std.algorithm;
-import std.range;
 import std.concurrency;
 import std.typecons;
 
@@ -24,29 +22,53 @@ class ElfDebuggee : WhiteHole!Debuggee
 
 	private void messageLoop() shared
 	{
-		int status;
-
-		do
+		while (true)
 		{
+			int status;
 			int child = wait(&status);
 
 			if (WIFSTOPPED(status))
-			{
 				ownerTid().send(Stopped(WSTOPSIG(status)));
 
-				receive(
-					(Continue req) { ptrace(__ptrace_request.PTRACE_CONT, child, null, null); },
-				);
+			if (WIFSIGNALED(status))
+				ownerTid().send(Signalled(WTERMSIG(status)));
+
+			if (WIFEXITED(status))
+			{
+				m_exited = true;
+				ownerTid().send(Exited());
+				break;
 			}
 
-			if (WIFSIGNALED(status))
+			bool shouldContinue = false;
+			while (!shouldContinue)
 			{
-				ownerTid().send(Signalled(WTERMSIG(status)));
+				receive(
+					(Continue req)
+					{
+						ptrace(__ptrace_request.PTRACE_CONT, child, null, null);
+						shouldContinue = true;
+					},
+					(SingleStep req)
+					{
+						ptrace(__ptrace_request.PTRACE_SINGLESTEP, child, null, null);
+						shouldContinue = true;
+					},
+					(RegistersRequest req)
+					{
+						RegistersResponse response;
+						ptrace(__ptrace_request.PTRACE_GETREGS, child, null, &response.registers);
+						ownerTid().send(response);
+					},
+					(PeekRequest req)
+					{
+						PeekResponse response;
+						response.word = ptrace(__ptrace_request.PTRACE_PEEKTEXT, child, cast(void*) req.address, null);
+						ownerTid().send(response);
+					}
+				);
 			}
 		}
-		while (!WIFEXITED(status));
-		ownerTid().send(Exited());
-		m_exited = true;
 	}
 
 	private void forkSpawn(immutable(char[]) binary, immutable(char[][]) args, immutable(char[][]) env) shared
@@ -57,8 +79,12 @@ class ElfDebuggee : WhiteHole!Debuggee
 		if (pid == 0)
 		{
 			// child
+			import std.algorithm : map;
+			import std.range : array, chain, only;
+			import std.string : toStringz;
+
 			enforce(ptrace(__ptrace_request.PTRACE_TRACEME, 0, null, null) == 0, "ptrace failed");
-			execve(binary.toStringz(), chain(only(binary), args).map!toStringz.chain(only(null)).array().ptr, env.map!toStringz.chain(only(null)).array().ptr);
+			execve(binary.toStringz(), args.map!toStringz.chain(only(null)).array().ptr, env.map!toStringz.chain(only(null)).array().ptr);
 			exit(0);
 		}
 		else if (pid > 0)
@@ -68,15 +94,33 @@ class ElfDebuggee : WhiteHole!Debuggee
 		}
 	}
 
-	///
 	override void spawn(immutable(char[]) binary, immutable(char[][]) args, immutable(char[][]) env)
 	{
-		m_debuggee = std.concurrency.spawnLinked(&forkSpawn, binary, args, env);
+		m_debuggee = spawnLinked(&forkSpawn, binary, args, env);
 	}
 
 	override void continue_()
 	{
 		m_debuggee.send(Continue());
+	}
+
+	override void stepInstruction()
+	{
+		m_debuggee.send(SingleStep());
+	}
+
+	override Registers registers()
+	{
+		m_debuggee.send(RegistersRequest());
+		auto response = receiveOnly!RegistersResponse();
+		return response.registers;
+	}
+
+	override Word peek(address_t address)
+	{
+		m_debuggee.send(PeekRequest(address));
+		auto response = receiveOnly!PeekResponse();
+		return response.word;
 	}
 
 	override @property bool exited()

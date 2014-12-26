@@ -2,8 +2,8 @@ module ddbg.debugee;
 
 public import ddbg.debugee.elf;
 
-import ddbg.breakpoint;
-import ddbg.register;
+public import ddbg.breakpoint;
+public import ddbg.register;
 import ddbg.common;
 
 /// Messages
@@ -18,6 +18,16 @@ struct Attached {}
 struct Exited {}
 /// ditto
 struct Continue {}
+/// ditto
+struct SingleStep {}
+/// ditto
+struct RegistersRequest {}
+/// ditto
+struct RegistersResponse { Registers registers; }
+/// ditto
+struct PeekRequest { address_t address; }
+/// ditto
+struct PeekResponse { Word word; }
 
 /// Debuggee interface
 interface Debuggee
@@ -44,7 +54,10 @@ interface Debuggee
 	void stepInstruction();
 
 	/// returns the current value of registers
-	Register[] getRegisters();
+	Registers registers();
+
+	/// reads a word from address
+	Word peek(address_t address);
 
 	/// has the debuggee exited
 	@property bool exited();
