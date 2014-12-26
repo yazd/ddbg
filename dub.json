@@ -1,0 +1,10 @@
+{
+	"name": "d-debug",
+	"description": "ELF x86 and x86-64 debugger",
+	"copyright": "Copyright © 2014, Yazan Dabain",
+	"authors": ["Yazan Dabain"],
+	"dependencies": {
+		"elf-d": ">=0.2.0",
+		"udis86-d": ">=1.7.2-1"
+	}
+}
