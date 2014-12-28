@@ -1,4 +1,4 @@
-module ddbg.debuggee.elf;
+module ddbg.debuggee.linux;
 
 import ddbg.common;
 import ddbg.debuggee;
@@ -15,8 +15,8 @@ import core.sys.posix.sys.wait;
 import core.sys.posix.unistd;
 import core.stdc.config;
 
-/// elf debuggee implementation
-class ElfDebuggee : WhiteHole!Debuggee
+/// linux debuggee implementation
+class LinuxDebuggee : WhiteHole!Debuggee
 {
 	private Breakpoint[address_t] breakpoints;
 	private Tid m_debuggee;

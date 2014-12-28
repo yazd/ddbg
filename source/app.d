@@ -7,7 +7,7 @@ Debuggee dbg;
 
 void main(string[] args)
 {
-	dbg = new ElfDebuggee();
+	dbg = new LinuxDebuggee();
 	dbg.spawn(args[1], args[1 .. $].idup, []);
 
 	while (!dbg.exited)
@@ -36,7 +36,7 @@ void onStart(Started)
 
 void onStop(Stopped msg)
 {
-	writeln("stopped due to signal ", msg.signal);
+	writeln("stopped");
 
 	//
 	//{ // print registers
