@@ -6,23 +6,23 @@ extern(C):
 
 struct user_regs_struct_32
 {
-  c_long ebx;
-  c_long ecx;
-  c_long edx;
-  c_long esi;
-  c_long edi;
-  c_long ebp;
-  c_long eax;
-  c_long xds;
-  c_long xes;
-  c_long xfs;
-  c_long xgs;
-  c_long orig_eax;
-  c_long eip;
-  c_long xcs;
-  c_long eflags;
-  c_long esp;
-  c_long xss;
+  c_ulong ebx;
+  c_ulong ecx;
+  c_ulong edx;
+  c_ulong esi;
+  c_ulong edi;
+  c_ulong ebp;
+  c_ulong eax;
+  c_ulong xds;
+  c_ulong xes;
+  c_ulong xfs;
+  c_ulong xgs;
+  c_ulong orig_eax;
+  c_ulong eip;
+  c_ulong xcs;
+  c_ulong eflags;
+  c_ulong esp;
+  c_ulong xss;
 }
 
 struct user_regs_struct_64
@@ -63,4 +63,8 @@ version(X86)
 else version(X86_64)
 {
 	alias user_regs_struct = user_regs_struct_64;
+}
+else
+{
+  static assert(0, "unsupported architecture");
 }

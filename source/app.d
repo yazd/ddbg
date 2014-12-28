@@ -18,6 +18,7 @@ void main(string[] args)
 			(Signalled msg) => onSignal(msg),
 			(Attached msg) => onAttach(msg),
 			(Exited msg) => onExit(msg),
+			(HitBreakpoint msg) => onHitBreakpoint(msg),
 			(LinkTerminated msg) => writeln("link terminated"),
 			(Variant msg) => writeln("uncaught message (", msg.type(), ")"),
 		);
@@ -29,13 +30,15 @@ void main(string[] args)
 void onStart(Started)
 {
 	writeln("started");
+	dbg.addBreakpoint(0x40052c);
+	dbg.continue_();
 }
 
 void onStop(Stopped msg)
 {
-	//writeln("stopped due to signal ", msg.signal);
+	writeln("stopped due to signal ", msg.signal);
 
-	//auto registers = dbg.getRegisters();
+	//
 	//{ // print registers
 	//	auto fields = __traits(allMembers, typeof(registers));
 	//	auto values = registers.tupleof;
@@ -45,10 +48,8 @@ void onStop(Stopped msg)
 	//		writef("%-8s 0x%-12x %s\n", fields[index], value, value);
 	//	}
 	//	writeln();
-	//	//writefln("%-8s 0x%-12x", "rip", registers.rip);
+	//writefln("%-8s 0x%-12x", "rip", cast(void*)registers.rip);
 	//}
-
-	dbg.stepInstruction();
 }
 
 void onSignal(Signalled msg)
@@ -64,4 +65,12 @@ void onAttach(Attached)
 void onExit(Exited)
 {
 	writeln("exited");
+}
+
+void onHitBreakpoint(HitBreakpoint msg)
+{
+	writefln("hit breakpoint 0x%x", msg.breakpoint.address);
+	//auto registers = dbg.registers();
+	//writefln("%-8s 0x%-12x", "rip", cast(void*)registers.rip);
+	dbg.resume(msg.breakpoint);
 }

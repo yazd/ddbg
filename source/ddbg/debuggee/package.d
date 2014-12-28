@@ -28,6 +28,12 @@ struct RegistersResponse { Registers registers; }
 struct PeekRequest { address_t address; }
 /// ditto
 struct PeekResponse { Word word; }
+/// ditto
+struct BreakpointRequest { address_t address; }
+/// ditto
+struct BreakpointResponse { Breakpoint breakpoint; }
+/// ditto
+struct HitBreakpoint { Breakpoint breakpoint; }
 
 /// Debuggee interface
 interface Debuggee
@@ -50,6 +56,9 @@ interface Debuggee
 	/// continues the debuggee
 	void continue_();
 
+	/// resumes from breakpoint
+	void resume(Breakpoint bp);
+
 	/// step by instruction
 	void stepInstruction();
 
@@ -59,6 +68,6 @@ interface Debuggee
 	/// reads a word from address
 	Word peek(address_t address);
 
-	/// has the debuggee exited
+	/// did the debuggee exit
 	@property bool exited();
 }
