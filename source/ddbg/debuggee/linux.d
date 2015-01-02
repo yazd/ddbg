@@ -1,29 +1,30 @@
 module ddbg.debuggee.linux;
 
 import ddbg.common;
+import ddbg.concurrency;
 import ddbg.debuggee;
 import ddbg.sys.ptrace;
 
-debug import std.stdio;
 import std.exception;
-import std.concurrency;
 import std.typecons;
 
-import core.sys.posix.stdlib;
-import core.sys.posix.signal;
-import core.sys.posix.sys.wait;
-import core.sys.posix.unistd;
-import core.stdc.config;
+import core.thread;
+
+debug import std.stdio;
 
 /// linux debuggee implementation
-class LinuxDebuggee : WhiteHole!Debuggee
+final class LinuxDebuggee : WhiteHole!Debuggee
 {
 	private Breakpoint[address_t] breakpoints;
-	private Tid m_debuggee;
+	private Thread m_thread;
 	private shared bool m_exited;
+	private MessageBox m_controller;
+	private MessageBox m_debuggee;
 
-	private void messageLoop() shared
+	private void messageLoop()
 	{
+		import core.sys.posix.stdlib;
+
 		static Registers getRegisters(ddbg.common.pid_t child)
 		{
 			Registers registers;
@@ -44,11 +45,11 @@ class LinuxDebuggee : WhiteHole!Debuggee
 
 				if (firstStop)
 				{
-					ownerTid().send(Started());
+					m_debuggee.send(Started());
 					firstStop = false;
 				}
 				else
-					ownerTid().send(Stopped(signal));
+					m_debuggee.send(Stopped(signal));
 
 				if (signal == 5)
 				{
@@ -70,26 +71,26 @@ class LinuxDebuggee : WhiteHole!Debuggee
 							registers.setIP(ip - 1);
 							ptrace(__ptrace_request.PTRACE_SETREGS, child, null, &registers);
 
-							ownerTid().send(HitBreakpoint(*bp));
+							m_debuggee.send(HitBreakpoint(*bp));
 						}
 					}
 				}
 			}
 
 			if (WIFSIGNALED(status))
-				ownerTid().send(Signalled(WTERMSIG(status)));
+				m_debuggee.send(Signalled(WTERMSIG(status)));
 
 			if (WIFEXITED(status))
 			{
 				m_exited = true;
-				ownerTid().send(Exited());
+				m_debuggee.send(Exited());
 				break;
 			}
 
 			bool shouldContinue = false;
 			while (!shouldContinue)
 			{
-				receive(
+				m_debuggee.receive(
 					(Continue req)
 					{
 						ptrace(__ptrace_request.PTRACE_CONT, child, null, null);
@@ -111,26 +112,29 @@ class LinuxDebuggee : WhiteHole!Debuggee
 						Word newValue = (word & ~0xFF) | 0xCC;
 						ptrace(__ptrace_request.PTRACE_POKETEXT, child, cast(void*) req.address, cast(void*) newValue);
 						bp.applied = true;
-						ownerTid().send(BreakpointResponse(bp));
+						m_debuggee.send(BreakpointResponse(bp));
 					},
 					(RegistersRequest req)
 					{
 						Registers registers = getRegisters(child);
-						ownerTid().send(RegistersResponse(registers));
+						m_debuggee.send(RegistersResponse(registers));
 					},
 					(PeekRequest req)
 					{
 						PeekResponse response;
 						response.word = ptrace(__ptrace_request.PTRACE_PEEKTEXT, child, cast(void*) req.address, null);
-						ownerTid().send(response);
+						m_debuggee.send(response);
 					}
 				);
 			}
 		}
 	}
 
-	private void forkSpawn(immutable(char[]) binary, immutable(char[][]) args, immutable(char[][]) env) shared
+	private void forkSpawn(immutable(char[]) binary, immutable(char[][]) args, immutable(char[][]) env)
 	{
+		import core.sys.posix.unistd;
+		import core.sys.posix.stdlib : exit;
+
 		auto pid = fork();
 		enforce(pid >= 0, "fork failed");
 
@@ -154,39 +158,47 @@ class LinuxDebuggee : WhiteHole!Debuggee
 
 	override void spawn(immutable(char[]) binary, immutable(char[][]) args, immutable(char[][]) env)
 	{
-		m_debuggee = spawnLinked(&forkSpawn, binary, args, env);
+		m_thread = new Thread(() {
+			forkSpawn(binary, args, env);
+		});
+		m_thread.isDaemon = true;
+		m_thread.start();
+
+		Link link = new Link();
+		m_controller = link.parent;
+		m_debuggee = link.child;
 	}
 
 	override void continue_()
 	{
-		m_debuggee.send(Continue());
+		m_controller.send(Continue());
 	}
 
 	override void stepInstruction()
 	{
-		m_debuggee.send(SingleStep());
+		m_controller.send(SingleStep());
 	}
 
 	override Registers registers()
 	{
-		m_debuggee.send(RegistersRequest());
-		auto response = receiveOnly!RegistersResponse();
+		m_controller.send(RegistersRequest());
+		auto response = m_controller.receiveOnly!RegistersResponse();
 		return response.registers;
 	}
 
 	override Word peek(address_t address)
 	{
-		m_debuggee.send(PeekRequest(address));
-		auto response = receiveOnly!PeekResponse();
+		m_controller.send(PeekRequest(address));
+		auto response = m_controller.receiveOnly!PeekResponse();
 		return response.word;
 	}
 
 	override void resume(Breakpoint breakpoint)
 	{
 		stepInstruction();
-		receiveOnly!Stopped();
-		m_debuggee.send(BreakpointRequest(breakpoint.address));
-		receiveOnly!BreakpointResponse();
+		m_controller.receiveOnly!Stopped();
+		m_controller.send(BreakpointRequest(breakpoint.address));
+		m_controller.receiveOnly!BreakpointResponse();
 		auto bp = breakpoint.address in breakpoints;
 		bp.applied = true;
 		continue_();
@@ -195,8 +207,8 @@ class LinuxDebuggee : WhiteHole!Debuggee
 	override Breakpoint addBreakpoint(address_t address)
 	{
 		if (auto bp = address in breakpoints) return *bp;
-		m_debuggee.send(BreakpointRequest(address));
-		auto response = receiveOnly!BreakpointResponse();
+		m_controller.send(BreakpointRequest(address));
+		auto response = m_controller.receiveOnly!BreakpointResponse();
 		breakpoints[response.breakpoint.address] = response.breakpoint;
 		return response.breakpoint;
 	}
@@ -204,5 +216,10 @@ class LinuxDebuggee : WhiteHole!Debuggee
 	override @property bool exited()
 	{
 		return m_exited;
+	}
+
+	override @property MessageBox control()
+	{
+		return m_controller;
 	}
 }

@@ -2,6 +2,7 @@ module ddbg.debuggee;
 
 public import ddbg.debuggee.linux;
 
+public import ddbg.concurrency;
 public import ddbg.breakpoint;
 public import ddbg.register;
 import ddbg.common;
@@ -70,4 +71,7 @@ interface Debuggee
 
 	/// did the debuggee exit
 	@property bool exited();
+
+	/// returns the controller messagebox
+	@property MessageBox control();
 }

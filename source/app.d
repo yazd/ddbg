@@ -1,6 +1,4 @@
 import ddbg.debuggee;
-
-import std.concurrency;
 import std.stdio;
 
 Debuggee dbg;
@@ -12,15 +10,15 @@ void main(string[] args)
 
 	while (!dbg.exited)
 	{
-		receive(
+		dbg.control.receive(
 			(Started msg) => onStart(msg),
 			(Stopped msg) => onStop(msg),
 			(Signalled msg) => onSignal(msg),
 			(Attached msg) => onAttach(msg),
 			(Exited msg) => onExit(msg),
 			(HitBreakpoint msg) => onHitBreakpoint(msg),
-			(LinkTerminated msg) => writeln("link terminated"),
-			(Variant msg) => writeln("uncaught message (", msg.type(), ")"),
+			//(LinkTerminated msg) => writeln("link terminated"),
+			//(Variant msg) => writeln("uncaught message (", msg.type(), ")"),
 		);
 	}
 
