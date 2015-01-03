@@ -1,10 +1,16 @@
 import ddbg.debuggee;
+import ddbg.loader;
+
 import std.stdio;
 
 Debuggee dbg;
+Loader ldr;
 
 void main(string[] args)
 {
+	import std.string, std.algorithm;
+	ldr = new ElfBinary(args[1]);
+
 	dbg = new LinuxDebuggee();
 	dbg.spawn(args[1], args[1 .. $].idup, []);
 
@@ -28,7 +34,12 @@ void main(string[] args)
 void onStart(Started)
 {
 	writeln("started");
-	dbg.addBreakpoint(0x40052c);
+	foreach (func; ldr.getFunctions()) if (func.name == "main")
+		dbg.addBreakpoint(func.address);
+
+	foreach (addr; ldr.addressFromSrcLocation(SourceLocation("printf.c", 10)))
+		dbg.addBreakpoint(addr);
+
 	dbg.continue_();
 }
 

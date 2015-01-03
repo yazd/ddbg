@@ -1,0 +1,14 @@
+{
+	"name": "example",
+	"description": "A minimal D application.",
+	"copyright": "Copyright © 2014, Yazan Dabain",
+	"authors": ["Yazan Dabain"],
+
+	"targetName": "example",
+	"targetType": "executable",
+	"targetPath": "../bin",
+
+	"dependencies": {
+		"ddbg": {"path": "../"}
+	}
+}
